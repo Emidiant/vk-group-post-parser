@@ -1,1 +1,4 @@
 credential.py
+.idea
+data/images
+__pycache__
