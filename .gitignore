@@ -2,3 +2,4 @@ credential.py
 .idea
 data/images
 __pycache__
+checkpoints

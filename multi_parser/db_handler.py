@@ -1,13 +1,13 @@
 from sqlalchemy import inspect, engine, MetaData
 
-from .common import get_logger
+from .common_python import get_logger
 import credential
 import pandas as pd
 
 class DataBaseHandler:
 
     def __init__(self):
-        self.engine = engine.create_engine(f"postgresql://{credential.host}:{credential.port}/{credential.database}")
+        self.engine = engine.create_engine(f"postgresql://{credential.user}:{credential.password}@{credential.host}:{credential.port}/{credential.database}")
         inspector = inspect(self.engine)
         self.meta_data = MetaData(bind=self.engine.connect())
         MetaData.reflect(self.meta_data)
@@ -16,7 +16,8 @@ class DataBaseHandler:
 
     def get_groups_domains(self) -> list:
         df_groups = pd.read_sql(sql="SELECT * FROM public.groups;", con=self.engine)
-        domains = df_groups[["domain", "offset"]].values.tolist()
+        self.__log.debug(df_groups)
+        domains = df_groups[["domain", "offset", "type", "allow"]].values.tolist()
         self.__log.debug(f"Domains: {domains}")
         return domains
 
@@ -32,4 +33,6 @@ class DataBaseHandler:
     def upload_posts_dataframe(self, df_posts, domain):
         self.__log.info(f"Start uploading posts from {domain}")
         self.__log.debug(f"\n{df_posts}")
+        if df_posts.shape[0] == 0:
+            self.__log.warn(f"You have parsed all posts from the group {domain}")
         df_posts.to_sql(name="posts", con=self.engine, if_exists="append", index=False)

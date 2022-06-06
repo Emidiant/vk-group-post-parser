@@ -1,6 +1,7 @@
 create table posts
 (
     id_increment        serial,
+    domain              varchar not null,
     id                  bigint,
     from_id             bigint,
     owner_id            bigint,
