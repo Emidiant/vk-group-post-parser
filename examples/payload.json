@@ -1,0 +1,34 @@
+{
+  "before":null,
+  "after":{
+    "id_increment":391,
+    "id":1466075,
+    "from_id":-42370492,
+    "owner_id":-42370492,
+    "date":1651211820,
+    "marked_as_ads":"0",
+    "is_favorite":"false",
+    "post_type":"post",
+    "text":"Не беремся утверждать, но инсайдеры сообщают, что у Эмбер будет менее 10 минут экранного времени во второй части фильма \'Аквамен\'. \\n\\nТак это или нет, узнаем уже в марте следующего года.",
+    "attachments":"[{\'id\': 457459783, \'date\': 457459783, \'link\': \'https://sun9-84.userapi.com/s/v1/if2/AeiLk2AJZA9FLaGjBNlViPICh0FMoh4BEL1aQqVbd5bUWsi5KBoBPgdSMfESSvVk_1OXMCS7zhATNko5YJMgN_qA.jpg?size=520x650&quality=96&type=album\', \'path\': \'data/images/photo/img_457459783.jpg\'}, {\'id\': 457459784, \'date\': 457459784, \'link\': \'https://sun9-79.userapi.com/s/v1/if2/9grMeo_hDX_m6LwS0XcBFKg6warHwVJQqxuF-2yYqCYeNG_rhop9V_BR8XJoYEH0U-5_gM37EM41HVhnMnTnoWkG.jpg?size=640x800&quality=96&type=album\', \'path\': \'data/images/photo/img_457459784.jpg\'}]",
+    "post_source":"{\"type\": \"vk\"}",
+    "repost_post_id_from":"",
+    "likes_count":726.0,
+    "views_count":55849.0,
+    "reposts_count":96.0
+  },
+  "source":{
+    "version":"1.9.3.Final",
+    "connector":"postgresql",
+    "name":"dbserver1",
+    "ts_ms":1654447376235,
+    "snapshot":"false",
+    "db":"postgres",
+    "sequence":"[\"38115136\",\"38115136\"]",
+    "schema":"public",
+    "table":"posts",
+    "txId":929,
+    "lsn":38115136,
+    "xmin":null
+  }
+}
