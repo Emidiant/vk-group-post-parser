@@ -5,5 +5,6 @@ create table groups
     description varchar,
     "offset"    integer,
     type        varchar,
-    allow       boolean default true
+    allow       boolean default true,
+    last_post_timestamp integer
 );

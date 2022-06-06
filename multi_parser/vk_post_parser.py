@@ -1,3 +1,4 @@
+import datetime
 import json
 import time
 from typing import List, Union
@@ -69,38 +70,128 @@ class VkPostParser:
         self.__log.debug(f"Items amount: {len(response['items'])}")
         return response['items'], offset + len(response['items'])
 
-    def get_dataframe_from_posts(self, items: List[dict], domain: str, image_parse: bool = False, target: str ="painting") -> Union[pd.DataFrame, None]:
+    def get_dataframe_from_posts(self, items: List[dict], domain: str, compare_date: int = None, image_parse: bool = False,
+                                 target: str ="painting") -> (Union[pd.DataFrame, None], bool):
         """
         Processing VK post
 
+        :param compare_date:    last timestamp from db
         :param items:           list of post in dict format
         :param domain:          group string domain from groups table
         :param image_parse:     flag which activate single mode parsing
         :param target:          type of group: painting or photo
         :return:                processed post in dict format or None if error detected
         """
-        self.__log.info(f"Start processing {len(items)} posts from {domain}")
+        self.__log.debug(f"Start processing {len(items)} posts from {domain}")
 
         processed_items = []
         for post in items:
-            time.sleep(0.2)
-            preview_text = post['text'][:80].replace('\n', '\\n')
+            if compare_date:
+                post_dt = datetime.datetime.fromtimestamp(post["date"])
+                if post_dt <= datetime.datetime.fromtimestamp(compare_date):
+                    return pd.DataFrame(processed_items), True
+            # time.sleep(0.2)
             if "copy_history" in post.keys():
-                preview_text += ", copy_history: " + post['copy_history'][0]['text'][:80].replace('\n', '\\n')
                 post_new = post['copy_history'][0]
                 post["repost_post_id_from"] = str(post_new["id"]) + str(post_new["from_id"])
                 formatted_dict_repost = format_dict(post_new, image_parse=image_parse, target=target)
                 formatted_dict_repost["domain"] = domain
                 if formatted_dict_repost is None:
                     self.__log.error(f"Stop parsing, problem with connect")
-                    return None
+                    return None, False
                 processed_items.append(formatted_dict_repost)
             formatted_dict_orig = format_dict(post, image_parse=image_parse, target=target)
             formatted_dict_orig["domain"] = domain
             if formatted_dict_orig is None:
                 self.__log.error(f"Stop parsing, problem with connect")
-                return None
+                return None, False
             processed_items.append(formatted_dict_orig)
-            # todo сохранение последнего прочитанного id поста, чтобы избежать коллизий при появлении новых записей в группе
-            # self.__log.debug(f"id: {post['id']}, date: {datetime.datetime.fromtimestamp(int(post['date']))}, text: {preview_text}")
-        return pd.DataFrame(processed_items)
+        return pd.DataFrame(processed_items), False
+
+    def check_new_post(self, resp_two_first_posts: list, last_post_timestamp: int, domain: str) -> (int, int):
+        """
+        Method for detecting new posts to avoid collisions
+
+        :param resp_two_first_posts:        info about two first posts
+        :param last_post_timestamp:         last timestamp from db
+        :param domain:                      group domain
+        :return:                            start offset (0 - from first post, 1 - from second, -1 - no new post), actual timestamp
+        """
+        last_datetime = datetime.datetime.fromtimestamp(last_post_timestamp)
+        first_post_datetime = datetime.datetime.fromtimestamp(resp_two_first_posts[0]["date"])
+        second_post_datetime = datetime.datetime.fromtimestamp(resp_two_first_posts[1]["date"])
+
+        if second_post_datetime > first_post_datetime:
+            # значит первый пост закреплённый
+            actual_post_dt = second_post_datetime
+            actual_timestamp = resp_two_first_posts[1]["date"]
+            start_offset = 1
+        else:
+            # закреплённого поста нет
+            actual_post_dt = first_post_datetime
+            start_offset = 0
+            actual_timestamp = resp_two_first_posts[0]["date"]
+        if last_datetime < actual_post_dt:
+            self.__log.info(f"Start parsing new posts in group: {domain}. Saved timestamp: {last_datetime}, New timestamp: {actual_post_dt}")
+            # необходимо парсить новые данные
+            return start_offset, actual_timestamp
+        return -1, -1
+
+    def parse_new_post(self, offset: int, domain: str, last_post_timestamp: int, post_batch: int, single_mode: bool, target: str) \
+            -> (bool, pd.DataFrame, int, int):
+        """
+        Первый offset, который приходит, это закреплённая запись, если она есть. Сравниваем datetime первого поста и второго.
+        Если второй больше первого, то первый пост закреплённый, проверяем есть ли закреплённый пост в базе по id и домену.
+        Сверяем timestamp первого поста в ленте и тот, который сохранён в базе. Если они различаются, то сначала парсим новые посты,
+        пока не дойдем до имеющегося. Считаем кол-во новых постов и смещаем offset на это кол-во.
+
+        :param offset:                  saved offset
+        :param domain:                  group domain
+        :param last_post_timestamp:     int timestamp from db
+        :param post_batch:              post amount for api request (max 100)
+        :param single_mode:             single mode with image parsing
+        :param target:                  type of group (painting or photo)
+        :return:
+        """
+        need_upload_timestamp = False
+        df_new_post = pd.DataFrame()
+        actual_timestamp = -1
+        # проверяем появились ли новые посты
+        if offset > 0 and not pd.isna(last_post_timestamp):
+            self.__log.info(f"Start processing group: {domain}, Timestamp: {datetime.datetime.fromtimestamp(last_post_timestamp)}, Offset: {offset},")
+
+            resp_two_first_posts, _ = self.get_posts(domain, offset=0, count=2)
+            time.sleep(2)
+            if len(resp_two_first_posts) == 2:
+                offset_check, actual_timestamp = self.check_new_post(resp_two_first_posts, last_post_timestamp, domain)
+                if offset_check != -1:
+                    num_new_post = 0
+                    while True:
+                        resp, offset_new = self.get_posts(domain, offset=offset_check, count=post_batch)
+                        time.sleep(2)
+                        df_posts, find_exist_post = self.get_dataframe_from_posts(resp, domain, compare_date=last_post_timestamp,
+                                                                                                image_parse=single_mode,
+                                                                                                target=target)
+                        if df_posts is None:
+                            self.__log.warn("df is None")
+                            return -1
+
+                        num_new_post += df_posts.shape[0]
+                        if df_posts.shape[0] > 0:
+                            if df_new_post.shape[0] == 0:
+                                df_new_post = df_posts
+                            else:
+                                df_new_post = pd.concat([df_new_post, df_posts])
+                            # db_handler.upload_posts_dataframe(df_posts, domain)
+                        if find_exist_post:
+                            # найден пост, совпадающий с последним в базе
+                            offset += num_new_post
+                            # db_handler.update_offset(domain, offset)
+                            # db_handler.update_timestamp(domain, actual_timestamp)
+                            self.__log.info(f"Successful find last post. New timestamp: {actual_timestamp}, Num posts: {num_new_post}")
+                            break
+                        else:
+                            offset_check += offset_new
+        else:
+            need_upload_timestamp = True
+        return need_upload_timestamp, df_new_post, offset, actual_timestamp
