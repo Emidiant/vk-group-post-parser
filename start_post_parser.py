@@ -1,9 +1,15 @@
-import datetime
-import time
+# -*- coding: utf-8 -*-
+
+"""
+start_post_parser.py
+~~~~~~~~~~~~~~~~~~~~
+
+Launching the post parser
+"""
 from time import sleep
 
-from multi_parser.vk_post_parser import VkPostParser
-from multi_parser.db_handler import DataBaseHandler
+from post_parser.vk_post_parser import VkPostParser
+from post_parser.db_handler import DataBaseHandler
 
 
 def vk_parse(single_mode: bool = False, post_batch: int = 5):

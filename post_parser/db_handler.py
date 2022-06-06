@@ -1,12 +1,28 @@
+# -*- coding: utf-8 -*-
+"""
+db_handler.py
+~~~~~~~~~~~~~
+
+Operation processing to database
+"""
 from sqlalchemy import inspect, engine, MetaData
 
-from .common_python import get_logger
+from vk_common.common_python import get_logger
 import credential
 import pandas as pd
 
 class DataBaseHandler:
 
     def __init__(self):
+        """
+        Initial connection to database
+        """
+        __list_var_credentials = [item for item in dir(credential) if not item.startswith("__")]
+        assert 'user' in __list_var_credentials
+        assert 'host' in __list_var_credentials
+        assert 'password' in __list_var_credentials
+        assert 'port' in __list_var_credentials
+
         self.engine = engine.create_engine(f"postgresql://{credential.user}:{credential.password}@{credential.host}:{credential.port}/{credential.database}")
         inspector = inspect(self.engine)
         self.meta_data = MetaData(bind=self.engine.connect())
@@ -21,9 +37,7 @@ class DataBaseHandler:
         :return:       list of tuple ("domain", "offset", "type", "allow", "last_post_timestamp")
         """
         df_groups = pd.read_sql(sql="SELECT * FROM public.groups;", con=self.engine)
-        # self.__log.debug(df_groups)
         domains = df_groups[["domain", "offset", "type", "allow", "last_post_timestamp"]].values.tolist()
-        # self.__log.debug(f"Domains: {domains}")
         return domains
 
     def update_offset(self, domain: str, offset: int) -> None:
@@ -56,7 +70,14 @@ class DataBaseHandler:
             where(groups.c.domain == domain)
         conn.execute(stmt)
 
-    def upload_posts_dataframe(self, df_posts, domain, new_offset):
+    def upload_posts_dataframe(self, df_posts: pd.DataFrame, domain: str, new_offset: int) -> None:
+        """
+        Upload new data from groups to 'posts' table
+
+        :param df_posts:        dataframe with new data
+        :param domain:          group domain
+        :param new_offset:      new offset for logging
+        """
         if df_posts.shape[0] == 0:
             self.__log.warn(f"You have parsed all posts from the group {domain}")
         else:

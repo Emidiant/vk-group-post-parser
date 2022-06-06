@@ -10,8 +10,8 @@ spark_consumer.py
 import findspark
 from pyspark.sql.dataframe import DataFrame
 
-from multi_parser.common_spark import deserialize_json, splitting_json_columns, parse_array_from_string
-from start_vk_parser.common import get_logger
+from vk_common.common_spark import deserialize_json, splitting_json_columns, parse_array_from_string
+from vk_common.common_python import get_logger
 from pyspark.sql.session import SparkSession
 import pyspark.sql.functions as F
 from pyspark.sql.types import StringType, StructField, StructType, ArrayType, LongType
@@ -107,14 +107,3 @@ class SparkConsumer:
         """
         self.__spark.stop()
         self.__log.info("Session stopped")
-
-def run_spark():
-    spark_consumer = SparkConsumer()
-    try:
-        time_termination = 120
-        spark_consumer.start_spark_session(time_termination)
-    except KeyboardInterrupt:
-        spark_consumer.stop_spark()
-
-if __name__ == "__main__":
-    run_spark()

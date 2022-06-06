@@ -7,7 +7,7 @@ import requests
 import credential
 import pandas as pd
 
-from multi_parser.common_python import format_dict, get_logger
+from vk_common.common_python import format_dict, get_logger
 
 
 class VkPostParser:
