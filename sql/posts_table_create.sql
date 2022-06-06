@@ -1,3 +1,5 @@
+drop table if exists posts;
+
 create table posts
 (
     id_increment        serial,

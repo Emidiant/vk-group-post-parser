@@ -156,9 +156,13 @@ class VkPostParser:
         need_upload_timestamp = False
         df_new_post = pd.DataFrame()
         actual_timestamp = -1
-        # проверяем появились ли новые посты
+
+        if not pd.isna(last_post_timestamp):
+            self.__log.info(f"Start processing group: {domain}, Timestamp: {datetime.datetime.fromtimestamp(last_post_timestamp)}, Offset: {offset}")
+        else:
+            self.__log.info(f"Start processing group: {domain}, Offset: {offset}")
+
         if offset > 0 and not pd.isna(last_post_timestamp):
-            self.__log.info(f"Start processing group: {domain}, Timestamp: {datetime.datetime.fromtimestamp(last_post_timestamp)}, Offset: {offset},")
 
             resp_two_first_posts, _ = self.get_posts(domain, offset=0, count=2)
             time.sleep(2)

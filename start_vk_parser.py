@@ -30,7 +30,8 @@ def vk_parse(single_mode: bool = False, post_batch: int = 5):
                     resp, new_offset = vk_groups_parser.get_posts(domain, offset=offset, count=post_batch)
                     if new_offset >= 0:
                         df_posts, _ = vk_groups_parser.get_dataframe_from_posts(resp, domain, image_parse=single_mode, target=target)
-                        if df_posts is None:
+                        if df_posts is None or df_posts.shape[0] == 0:
+                            print("problem")
                             return -1
                         if need_upload_timestamp:
                             db_handler.update_timestamp(domain, max(df_posts["date"]))
