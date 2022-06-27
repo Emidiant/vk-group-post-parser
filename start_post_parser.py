@@ -48,7 +48,7 @@ def vk_post_parse(single_mode: bool = False, post_batch: int = 5):
                         if df_posts is None or df_posts.shape[0] == 0:
                             __log.warning("Read all posts from the group or an error has occurred")
                             continue
-                            # return -1
+                            
                         if need_upload_timestamp:
                             db_handler.update_timestamp(domain, max(df_posts["date"]))
                         df_posts["target"] = target
@@ -64,4 +64,4 @@ def vk_post_parse(single_mode: bool = False, post_batch: int = 5):
     return 0
 
 if __name__ == "__main__":
-    vk_post_parse(single_mode=False, post_batch=5)
+    vk_post_parse(single_mode=False, post_batch=int(os.getenv("POST_BATCH", 5)))
