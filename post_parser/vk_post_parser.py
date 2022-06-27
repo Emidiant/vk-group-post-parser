@@ -50,7 +50,7 @@ class VkPostParser:
             return -1
 
     def get_posts(self, group_domain: str, offset: int = 0, count: int = 10) -> (list, int):
-        f"""
+        """
         Get post with API vk
         
         :param group_domain:    group string domain vk.com/<group_domain>
@@ -98,7 +98,7 @@ class VkPostParser:
                 post_dt = datetime.datetime.fromtimestamp(post["date"])
                 if post_dt <= datetime.datetime.fromtimestamp(compare_date):
                     return pd.DataFrame(processed_items), True
-            # time.sleep(0.2)
+
             if "copy_history" in post.keys():
                 post_new = post['copy_history'][0]
                 post["repost_post_id_from"] = str(post_new["id"]) + str(post_new["from_id"])
@@ -130,18 +130,18 @@ class VkPostParser:
         second_post_datetime = datetime.datetime.fromtimestamp(resp_two_first_posts[1]["date"])
 
         if second_post_datetime > first_post_datetime:
-            # значит первый пост закреплённый
+            # first post pinned
             actual_post_dt = second_post_datetime
             actual_timestamp = resp_two_first_posts[1]["date"]
             start_offset = 1
         else:
-            # закреплённого поста нет
+            # no pinned post
             actual_post_dt = first_post_datetime
             start_offset = 0
             actual_timestamp = resp_two_first_posts[0]["date"]
         if last_datetime < actual_post_dt:
             self.__log.info(f"Start parsing new posts in group: {domain}. Saved timestamp: {last_datetime}, New timestamp: {actual_post_dt}")
-            # необходимо парсить новые данные
+            # need to parse new data
             return start_offset, actual_timestamp
         return -1, -1
 
@@ -171,7 +171,6 @@ class VkPostParser:
             self.__log.info(f"Start processing group: {domain}, Offset: {offset}")
 
         if offset > 0 and not pd.isna(last_post_timestamp):
-
             resp_two_first_posts, _ = self.get_posts(domain, offset=0, count=2)
             time.sleep(2)
             if len(resp_two_first_posts) == 2:
@@ -194,12 +193,9 @@ class VkPostParser:
                                 df_new_post = df_posts
                             else:
                                 df_new_post = pd.concat([df_new_post, df_posts])
-                            # db_handler.upload_posts_dataframe(df_posts, domain)
                         if find_exist_post:
-                            # найден пост, совпадающий с последним в базе
+                            # found a post matching the last one in the database
                             offset += num_new_post
-                            # db_handler.update_offset(domain, offset)
-                            # db_handler.update_timestamp(domain, actual_timestamp)
                             self.__log.info(f"Successful find last post. New timestamp: {actual_timestamp}, Num posts: {num_new_post}")
                             break
                         else:

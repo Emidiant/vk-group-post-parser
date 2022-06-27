@@ -31,11 +31,12 @@ def vk_post_parse(single_mode: bool = False, post_batch: int = 5):
             domains = db_handler.get_groups_domains()
             for domain, offset, target, allow, last_post_timestamp in domains:
                 if allow:
+                    # check new posts
                     need_upload_timestamp, df_new_post, offset, actual_timestamp = \
                         vk_groups_parser.parse_new_post(offset, domain, last_post_timestamp, post_batch, single_mode, target)
 
                     if df_new_post.shape[0] != 0:
-                        # найден пост, совпадающий с последним в базе
+                        # found a post matching the last one in the database
                         df_new_post["target"] = target
                         db_handler.upload_posts_dataframe(df_new_post, domain, offset)
                         db_handler.update_offset(domain, offset)
@@ -48,7 +49,7 @@ def vk_post_parse(single_mode: bool = False, post_batch: int = 5):
                         if df_posts is None or df_posts.shape[0] == 0:
                             __log.warning("Read all posts from the group or an error has occurred")
                             continue
-                            
+
                         if need_upload_timestamp:
                             db_handler.update_timestamp(domain, max(df_posts["date"]))
                         df_posts["target"] = target
