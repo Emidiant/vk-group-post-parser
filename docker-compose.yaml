@@ -7,8 +7,6 @@ services:
       - POST_BATCH=${POST_BATCH}
       - POSTGRES_HOST=${POSTGRES_HOST}
       - POSTGRES_PORT=${POSTGRES_PORT}
-      - API_VK_CODE=${API_VK_CODE}
-      # insert code from url https://oauth.vk.com/authorize?client_id=8166774&display=page&redirect_uri=https://oauth.vk.com/blank.html&scope=groups&response_type=code&v=5.131
     networks:
       - debezium_default
 

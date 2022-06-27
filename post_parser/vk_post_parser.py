@@ -12,6 +12,8 @@ import time
 from typing import List, Union
 
 import requests
+from vk_api import vk_api
+
 import credential
 import pandas as pd
 
@@ -25,9 +27,29 @@ class VkPostParser:
 
     def __init__(self, hdfs_dir):
         self.__log = get_logger(self.__class__.__name__)
-        self.__access_token = os.getenv("API_VK_KEY", credential.access_token)
-        self.__vk_api_code = os.getenv("API_VK_CODE", credential.code)
+
         self.hdfs_dir = hdfs_dir
+        login = credential.vk_login
+        VK = vk_api.VkApi(login, credential.vk_passw)
+        VK.auth()
+        VK = VK.get_api()
+        access_token = 0
+
+        try:
+            User = VK.users.get()
+        except:
+            self.__log.error(f"Can't authorize user {login} for update access token")
+        else:
+            with open('vk_config.v2.json', 'r') as data_file:
+                data = json.load(data_file)
+
+            for xxx in data[login]['token'].keys():
+                for yyy in data[login]['token'][xxx].keys():
+                    access_token = data[login]['token'][xxx][yyy]['access_token']
+
+            self.__log.debug(f"Access_Token: {access_token}")
+            self.__access_token = os.getenv("API_VK_KEY", access_token)
+            os.remove('vk_config.v2.json')
 
     def get_new_access_token(self) -> int:
         """
@@ -75,6 +97,7 @@ class VkPostParser:
                 self.__log.warn(f"Try update token from code, response {response['error']}")
                 if self.get_new_access_token() == 0:
                     return [], -2
+            self.__log.error(response)
             return [], -1
         self.__log.debug(f"Items amount: {len(response['items'])}")
         return response['items'], offset + len(response['items'])
