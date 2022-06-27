@@ -27,14 +27,15 @@ class VkPostParser:
 
     def __init__(self, hdfs_dir):
         self.__log = get_logger(self.__class__.__name__)
-
         self.hdfs_dir = hdfs_dir
+        self.__access_token = self.get_new_access_token()
+
+    def get_new_access_token(self):
         login = credential.vk_login
         VK = vk_api.VkApi(login, credential.vk_passw)
         VK.auth()
         VK = VK.get_api()
         access_token = 0
-
         try:
             User = VK.users.get()
         except:
@@ -48,30 +49,30 @@ class VkPostParser:
                     access_token = data[login]['token'][xxx][yyy]['access_token']
 
             self.__log.debug(f"Access_Token: {access_token}")
-            self.__access_token = os.getenv("API_VK_KEY", access_token)
             os.remove('vk_config.v2.json')
+        return access_token
 
-    def get_new_access_token(self) -> int:
-        """
-        Get new token for vk
-
-        :return:    operation code
-        """
-        redirect_uri = "https://oauth.vk.com/blank.html"
-        code_url = f"https://oauth.vk.com/authorize?client_id={credential.app_id}&display=page&redirect_uri={redirect_uri}&scope=groups&response_type=code&v=5.131"
-        self.__log.debug(f"Please, follow link and update code: {code_url}")
-        # Параметр code может быть использован в течение 1 часа для получения ключа доступа к API access_token с Вашего сервера.
-        url_token = f"https://oauth.vk.com/access_token?client_id=8166774&client_secret={credential.client_secret}&redirect_uri={redirect_uri}&code={self.__vk_api_code}"
-        response = json.loads(requests.get(url_token).text)
-        self.__log.debug(response)
-        if "access_token" in response.keys():
-            self.__log.info("Token successfully updated")
-            self.__access_token = response["access_token"]
-            credential.access_token = response["access_token"]
-            return 0
-        else:
-            self.__log.error(f"Can't update token: {response}")
-            return -1
+    # def get_new_access_token(self) -> int:
+    #     """
+    #     Get new token for vk
+    #
+    #     :return:    operation code
+    #     """
+    #     redirect_uri = "https://oauth.vk.com/blank.html"
+    #     code_url = f"https://oauth.vk.com/authorize?client_id={credential.app_id}&display=page&redirect_uri={redirect_uri}&scope=groups&response_type=code&v=5.131"
+    #     self.__log.debug(f"Please, follow link and update code: {code_url}")
+    #     # Параметр code может быть использован в течение 1 часа для получения ключа доступа к API access_token с Вашего сервера.
+    #     url_token = f"https://oauth.vk.com/access_token?client_id=8166774&client_secret={credential.client_secret}&redirect_uri={redirect_uri}&code={self.__vk_api_code}"
+    #     response = json.loads(requests.get(url_token).text)
+    #     self.__log.debug(response)
+    #     if "access_token" in response.keys():
+    #         self.__log.info("Token successfully updated")
+    #         self.__access_token = response["access_token"]
+    #         credential.access_token = response["access_token"]
+    #         return 0
+    #     else:
+    #         self.__log.error(f"Can't update token: {response}")
+    #         return -1
 
     def get_posts(self, group_domain: str, offset: int = 0, count: int = 10) -> (list, int):
         """
@@ -95,7 +96,8 @@ class VkPostParser:
         else:
             if "access_token has expired" in response['error']["error_msg"]:
                 self.__log.warn(f"Try update token from code, response {response['error']}")
-                if self.get_new_access_token() == 0:
+                self.__access_token = self.get_new_access_token()
+                if self.__access_token == 0:
                     return [], -2
             self.__log.error(response)
             return [], -1
