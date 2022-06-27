@@ -61,10 +61,10 @@ class SparkConsumer:
 
         if time_termination:
             query.awaitTermination(time_termination)
+            self.__log.warning(f"Stop after {time_termination} seconds working")
+            self.stop_spark()
         else:
             query.awaitTermination()
-        self.__log.warning(f"Stop after {time_termination} seconds working")
-        self.stop_spark()
 
     def dataframe_transform(self, new_raw: DataFrame, epoch_id: int):
         """
@@ -76,12 +76,12 @@ class SparkConsumer:
         new_raw.persist()
         self.__log.debug(f"Epoch ID: {epoch_id}")
         new_raw = splitting_json_columns(new_raw)
-        # структура вложений для attachments
+        # included structure for attachments field
         struct_attach = ArrayType(StructType([
             StructField('id', LongType()),
             StructField('date', LongType()),
             StructField('link', StringType()),
-            StructField('path', StringType()) # todo удалить, т.к. будет парсинг на втором этапе
+            StructField('path', StringType())
         ]))
 
         retrieve_array = F.udf(parse_array_from_string, struct_attach)
@@ -111,9 +111,6 @@ class SparkConsumer:
                 .mode('append') \
                 .format("parquet") \
                 .save(dir_parquet)
-
-            # .save('data/images/parquet/' + topic.split('.')[2])
-            # self.__log.debug(f"First row: {df_op_create.first()}")
 
     def stop_spark(self):
         """
