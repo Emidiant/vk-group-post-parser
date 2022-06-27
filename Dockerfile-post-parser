@@ -1,0 +1,30 @@
+FROM python:3.8-slim
+
+ARG POSTGRES_HOST
+ARG POSTGRES_PORT
+ARG HDFS_DIR
+ENV HDFS_DIR $HDFS_DIR
+ENV POSTGRES_HOST $POSTGRES_HOST
+ENV POSTGRES_PORT $POSTGRES_PORT
+
+ENV POST_PARSER_HOME=/vk_parser
+
+RUN mkdir -p $POST_PARSER_HOME/post_parser & mkdir -p $POST_PARSER_HOME/vk_common & mkdir -p $POST_PARSER_HOME/data/images
+
+COPY post_parser/* "$POST_PARSER_HOME"/post_parser/
+COPY vk_common/common_python.py "$POST_PARSER_HOME"/vk_common/common_python.py
+COPY start_post_parser.py "$POST_PARSER_HOME"/start_post_parser.py
+COPY requirements/requirements_post_parsing.txt "$POST_PARSER_HOME"/
+COPY requirements/requirements.txt "$POST_PARSER_HOME"/
+COPY credential.py "$POST_PARSER_HOME"/credential.py
+
+
+RUN python3 -m pip install --upgrade pip
+ENV PATH=$PATH:$POST_PARSER_HOME/.local/bin
+RUN python3 -m pip install -r $POST_PARSER_HOME/requirements.txt
+RUN python3 -m pip install -r $POST_PARSER_HOME/requirements_post_parsing.txt
+RUN python3 -m pip install psycopg2-binary
+
+WORKDIR $POST_PARSER_HOME
+
+CMD ["python3", "./start_post_parser.py"]

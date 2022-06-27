@@ -1,25 +1,33 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
 """
 start_post_parser.py
 ~~~~~~~~~~~~~~~~~~~~
 
 Launching the post parser
 """
+import os
 from time import sleep
 
+import credential
 from post_parser.vk_post_parser import VkPostParser
 from post_parser.db_handler import DataBaseHandler
+from vk_common.common_python import get_logger
 
 
-def vk_parse(single_mode: bool = False, post_batch: int = 5):
-    db_handler = DataBaseHandler()
-    vk_groups_parser = VkPostParser()
+def vk_post_parse(single_mode: bool = False, post_batch: int = 5):
+    db_handler = DataBaseHandler(
+        host=os.getenv("POSTGRES_HOST", credential.host),
+        port=os.getenv("POSTGRES_PORT", credential.port)
+    )
+    hdfs_dir = os.getenv("HDFS_DIR", "/tmp/jusergeeva-242388/project")
+    vk_groups_parser = VkPostParser(hdfs_dir)
     total_loop = 100
     i = total_loop
+    __log = get_logger("VkPostParse")
     try:
         while i > 0:
-            print(f"Iteration {total_loop - i + 1}/{total_loop}")
+            __log.info(f"Iteration {total_loop - i + 1}/{total_loop}")
             domains = db_handler.get_groups_domains()
             for domain, offset, target, allow, last_post_timestamp in domains:
                 if allow:
@@ -28,6 +36,7 @@ def vk_parse(single_mode: bool = False, post_batch: int = 5):
 
                     if df_new_post.shape[0] != 0:
                         # найден пост, совпадающий с последним в базе
+                        df_new_post["target"] = target
                         db_handler.upload_posts_dataframe(df_new_post, domain, offset)
                         db_handler.update_offset(domain, offset)
                         db_handler.update_timestamp(domain, actual_timestamp)
@@ -37,20 +46,22 @@ def vk_parse(single_mode: bool = False, post_batch: int = 5):
                     if new_offset >= 0:
                         df_posts, _ = vk_groups_parser.get_dataframe_from_posts(resp, domain, image_parse=single_mode, target=target)
                         if df_posts is None or df_posts.shape[0] == 0:
-                            print("problem")
-                            return -1
+                            __log.warning("Read all posts from the group or an error has occurred")
+                            continue
+                            # return -1
                         if need_upload_timestamp:
                             db_handler.update_timestamp(domain, max(df_posts["date"]))
+                        df_posts["target"] = target
                         db_handler.upload_posts_dataframe(df_posts, domain, new_offset)
                         db_handler.update_offset(domain, new_offset)
                         sleep(2)
                     elif new_offset == -1:
-                        print("problem")
+                        __log.error("Problem, new_offset = -1")
                         return -1
             i -= 1
     except KeyboardInterrupt:
-        print("Parser stopped")
+        __log.info("Parser stopped")
     return 0
 
 if __name__ == "__main__":
-    vk_parse(single_mode=False, post_batch=5)
+    vk_post_parse(single_mode=False, post_batch=5)

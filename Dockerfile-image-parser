@@ -1,0 +1,29 @@
+FROM python:3.8-slim
+
+ARG HDFS_HOST
+ARG HDFS_PORT
+ARG MODE_FS
+ARG HDFS_DIR
+ENV HDFS_DIR $HDFS_DIR
+ENV MODE_FS $MODE_FS
+ENV HDFS_HOST $HDFS_HOST
+ENV HDFS_PORT $HDFS_PORT
+
+ENV IMAGE_PARSER_HOME=/vk_parser
+
+RUN mkdir -p $IMAGE_PARSER_HOME/url_parser && mkdir -p $IMAGE_PARSER_HOME/data/images  && mkdir -p $POST_PARSER_HOME/vk_common &
+
+COPY url_parser/* "$IMAGE_PARSER_HOME"/url_parser/
+COPY start_url_parser.py "$IMAGE_PARSER_HOME"/start_url_parser.py
+COPY requirements/requirements_url_parsing.txt "$IMAGE_PARSER_HOME"/
+COPY requirements/requirements.txt "$IMAGE_PARSER_HOME"/
+
+RUN python3 -m pip install --upgrade pip
+ENV PATH=$PATH:$IMAGE_PARSER_HOME/.local/bin
+COPY vk_common/common_python.py "$IMAGE_PARSER_HOME"/vk_common/common_python.py
+RUN python3 -m pip install -r $IMAGE_PARSER_HOME/requirements.txt
+RUN python3 -m pip install -r $IMAGE_PARSER_HOME/requirements_url_parsing.txt
+
+WORKDIR $IMAGE_PARSER_HOME
+
+CMD ["python3", "./start_url_parser.py"]

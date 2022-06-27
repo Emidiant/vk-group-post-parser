@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+vk_post_parser.py
+~~~~~~~~~~~~~~~~~
+
+Parsing posts from VK
+"""
 import datetime
 import json
 import time
@@ -15,9 +22,10 @@ class VkPostParser:
     Post parser from group by domain
     """
 
-    def __init__(self):
+    def __init__(self, hdfs_dir):
         self.__log = get_logger(self.__class__.__name__)
         self.__access_token = credential.access_token
+        self.hdfs_dir = hdfs_dir
 
     def get_new_access_token(self) -> int:
         """
@@ -94,13 +102,13 @@ class VkPostParser:
             if "copy_history" in post.keys():
                 post_new = post['copy_history'][0]
                 post["repost_post_id_from"] = str(post_new["id"]) + str(post_new["from_id"])
-                formatted_dict_repost = format_dict(post_new, image_parse=image_parse, target=target)
+                formatted_dict_repost = format_dict(post_new, image_parse=image_parse, target=target, hdfs=self.hdfs_dir)
                 formatted_dict_repost["domain"] = domain
                 if formatted_dict_repost is None:
                     self.__log.error(f"Stop parsing, problem with connect")
                     return None, False
                 processed_items.append(formatted_dict_repost)
-            formatted_dict_orig = format_dict(post, image_parse=image_parse, target=target)
+            formatted_dict_orig = format_dict(post, image_parse=image_parse, target=target, hdfs=self.hdfs_dir)
             formatted_dict_orig["domain"] = domain
             if formatted_dict_orig is None:
                 self.__log.error(f"Stop parsing, problem with connect")

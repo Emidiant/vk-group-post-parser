@@ -3,6 +3,7 @@ drop table if exists posts;
 create table posts
 (
     id_increment        serial,
+    target              varchar,
     domain              varchar not null,
     id                  bigint,
     from_id             bigint,

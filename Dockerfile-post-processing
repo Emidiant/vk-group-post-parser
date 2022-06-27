@@ -1,0 +1,33 @@
+ARG IMAGE_VARIANT=slim-buster
+ARG OPENJDK_VERSION=8
+ARG PYTHON_VERSION=3.8
+ARG KAFKA_HOST
+ARG KAFKA_PORT
+
+FROM python:${PYTHON_VERSION}-${IMAGE_VARIANT} AS py3
+FROM openjdk:${OPENJDK_VERSION}-${IMAGE_VARIANT}
+
+COPY --from=py3 / /
+
+ARG PYSPARK_VERSION=3.0.2
+RUN pip --no-cache-dir install pyspark==${PYSPARK_VERSION}
+
+COPY spark_jars/* /usr/local/lib/python3.8/site-packages/pyspark/jars
+
+ENV KAFKA_HOST $KAFKA_HOST
+ENV KAFKA_PORT $KAFKA_PORT
+
+RUN mkdir -p post_processing & mkdir -p vk_common & mkdir -p data/images
+
+COPY post_processing/* /post_processing/
+COPY vk_common/common_spark.py /vk_common/common_spark.py
+COPY vk_common/common_python.py /vk_common/common_python.py
+COPY start_post_processing.py /start_post_processing.py
+COPY requirements/requirements.txt /
+
+RUN python3 -m pip install --upgrade pip
+ENV PATH=$PATH:/.local/bin
+RUN python3 -m pip install -r /requirements.txt
+
+
+CMD ["python3", "./start_post_processing.py"]

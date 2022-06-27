@@ -1,0 +1,5 @@
+# Requirements
+watchdog~=2.1.5
+filelock~=3.6.0
+pyarrow~=7.0.0
+hdfs~=2.7.0

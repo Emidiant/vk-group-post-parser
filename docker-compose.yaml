@@ -1,0 +1,36 @@
+version: '3'
+
+services:
+  vk_post_parser:
+    image: vk-post-parsing:latest
+    links:
+      - postgres
+    environment:
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+    networks:
+      - debezium_default
+
+  vk_post_processing:
+    image: vk-post-processing:latest
+    environment:
+      - KAFKA_HOST=${KAFKA_HOST}
+      - KAFKA_PORT=${KAFKA_PORT}
+    volumes:
+      - /Users/emidiant/PycharmProjects/vk-parser/data/images:/vk_parser/data/images
+    networks:
+      - debezium_default
+
+  vk_url_image_parser:
+    image: vk-url-image-parsing:latest
+    deploy:
+      replicas: 2
+    environment:
+      - HDFS_HOST=${HDFS_HOST}
+      - HDFS_PORT=${HDFS_PORT}
+    volumes:
+      - /Users/emidiant/PycharmProjects/vk-parser/data/images:/vk_parser/data/images
+
+networks:
+  debezium_default:
+    external: true

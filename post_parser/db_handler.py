@@ -13,21 +13,20 @@ import pandas as pd
 
 class DataBaseHandler:
 
-    def __init__(self):
+    def __init__(self, host, port):
         """
         Initial connection to database
         """
+        self.__log = get_logger(self.__class__.__name__)
+        self.__log.info(f"Start initial DB, host: {host}, port: {port}")
         __list_var_credentials = [item for item in dir(credential) if not item.startswith("__")]
         assert 'user' in __list_var_credentials
-        assert 'host' in __list_var_credentials
         assert 'password' in __list_var_credentials
-        assert 'port' in __list_var_credentials
 
-        self.engine = engine.create_engine(f"postgresql://{credential.user}:{credential.password}@{credential.host}:{credential.port}/{credential.database}")
+        self.engine = engine.create_engine(f"postgresql://{credential.user}:{credential.password}@{host}:{port}/{credential.database}")
         inspector = inspect(self.engine)
         self.meta_data = MetaData(bind=self.engine.connect())
         MetaData.reflect(self.meta_data)
-        self.__log = get_logger(self.__class__.__name__)
         self.__log.debug(f"Tables: {inspector.get_table_names(schema='public')}")
 
     def get_groups_domains(self) -> list:

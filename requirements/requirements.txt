@@ -1,0 +1,4 @@
+# Requirements
+pandas>=1.4.1
+colorlog
+requests

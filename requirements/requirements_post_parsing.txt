@@ -1,0 +1,3 @@
+# Requirements for post parsing
+sqlalchemy>=1.4.9
+

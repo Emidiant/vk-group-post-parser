@@ -18,7 +18,7 @@ def get_logger(class_name, log_level=logging.DEBUG):
     logger = logging.Logger(name=class_name, level=log_level)
     stream_handler = colorlog.StreamHandler()
     stream_handler.setFormatter(
-        colorlog.ColoredFormatter('%(log_color)s%(asctime)s  %(name)16s  %(levelname)8s: %(message)s'))
+        colorlog.ColoredFormatter('%(log_color)s%(asctime)s  %(name)16s:  %(levelname)6s: %(message)s'))
     logger.addHandler(stream_handler)
     return logger
 
@@ -45,10 +45,11 @@ def find_optimal_image_size(sizes_link_list: list) -> Union[dict, None]:
             return find_item["url"]
     return None
 
-def format_dict(item: dict, image_parse: bool = False, target: str = "painting") -> Union[dict, None]:
+def format_dict(item: dict, image_parse: bool = False, target: str = "painting", hdfs: str = "/") -> Union[dict, None]:
     """
     Post data preparing for insert in database. Single mode with image parsing allowed for old version not parallel model
 
+    :param hdfs:            hdfs dir to image saving
     :param image_parse:     activated flag for single mode parser
     :param target:          group type, which we're parsing painting or photo
     :param item:            post data in dictionary format
@@ -67,7 +68,8 @@ def format_dict(item: dict, image_parse: bool = False, target: str = "painting")
                         photo_dict = {
                             "id": att["photo"]["id"],
                             "date": att["photo"]["id"],
-                            "link": find_optimal_image_size(att["photo"]["sizes"])
+                            "link": find_optimal_image_size(att["photo"]["sizes"]),
+                            "path": f"{hdfs}/{target}/img_{att['photo']['id']}/.jpg"
                         }
                         if photo_dict["link"]:
                             # start image parsing for single mode

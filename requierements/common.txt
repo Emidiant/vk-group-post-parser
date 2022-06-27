@@ -1,4 +1,0 @@
-# Requirements
-pandas>=1.4.1
-pyspark>=3.0.2
-sqlalchemy>=1.4.9

@@ -6,8 +6,7 @@ spark_consumer.py
 
 Считываем события из базы данных
 """
-
-import findspark
+import os
 from pyspark.sql.dataframe import DataFrame
 
 from vk_common.common_spark import deserialize_json, splitting_json_columns, parse_array_from_string
@@ -24,34 +23,46 @@ class SparkConsumer:
     def __init__(self):
         self.__log = get_logger(self.__class__.__name__)
         self.__log.info("Starting SparkSession")
-        findspark.init()
-        self.__spark = SparkSession.builder.appName('DebeziumKafkaStreamingConsumer').getOrCreate()
+        self.__spark = SparkSession\
+            .builder\
+            .appName('DebeziumKafkaStreamingConsumer') \
+            .getOrCreate()
 
-    def start_spark_session(self, time_termination: int = 60) -> None:
+    def start_spark_session(self, time_termination: int = None) -> None:
         """
         Start streaming micro-batch
         """
         self.__log.info(f"Spark session started: {self.__spark.sparkContext}")
 
+        kafka_host = os.getenv("KAFKA_HOST", "localhost")
+        kafka_port = os.getenv("KAFKA_PORT", 9092)
+
+        self.__log.info(f"Kafka config: host={kafka_host}, port={kafka_port}")
         kafka = self.__spark \
             .readStream \
             .format("kafka") \
-            .option("kafka.bootstrap.servers", "192.168.1.110:9092") \
+            .option("failOnDataLoss", "false") \
+            .option("kafka.bootstrap.servers", f"{kafka_host}:{kafka_port}") \
             .option("subscribePattern", "dbserver1.public.*") \
             .load()
 
         kafka = kafka.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)", "CAST(topic AS STRING)")
 
+        checkpoint_location = "checkpoints/spark_1"
+        # checkpoint_location = "/Users/emidiant/PycharmProjects/vk-parser/checkpoints/spark_2"
         query = kafka \
             .writeStream \
             .trigger(processingTime='30 seconds') \
             .outputMode("update") \
-            .option("checkpointLocation", "/Users/emidiant/PycharmProjects/vk-parser/checkpoints/spark_1") \
+            .option("checkpointLocation", checkpoint_location) \
             .queryName("qraw_spark_1") \
             .foreachBatch(self.dataframe_transform) \
             .start()
 
-        query.awaitTermination(time_termination)
+        if time_termination:
+            query.awaitTermination(time_termination)
+        else:
+            query.awaitTermination()
         self.__log.warning(f"Stop after {time_termination} seconds working")
         self.stop_spark()
 
@@ -74,7 +85,6 @@ class SparkConsumer:
         ]))
 
         retrieve_array = F.udf(parse_array_from_string, struct_attach)
-
         new_raw.show()
         topics_schema = new_raw.select("topic").distinct().collect()
         topics_list = [top.topic for top in topics_schema if top.topic == "dbserver1.public.posts"]
@@ -86,19 +96,23 @@ class SparkConsumer:
             topic_key_value, isKeyDefined = deserialize_json(topic_key_value)
             df_op_create = topic_key_value.filter(topic_key_value.op == "c") \
                 .select(F.col("after.*")) \
-                .select("id_increment", "domain", "attachments", F.col("date").alias("timestamp")) \
+                .select("id_increment", "target", "domain", "attachments", F.col("date").alias("timestamp")) \
                 .withColumn("attachments", F.explode(retrieve_array(F.col("attachments")))) \
-                .select("id_increment", "domain", "timestamp", F.col("attachments.*")) \
+                .select("id_increment", "target", "domain", "timestamp", F.col("attachments.*")) \
                 .where(F.col("id") != 0) \
-                .select("id_increment", "domain", "timestamp", "link")
+                .select("id_increment", "target", "domain", "timestamp", "id", "link")
 
             df_op_create.show()
 
+            # dir_parquet = '/Users/emidiant/PycharmProjects/vk-parser/data/images/parquet/' + topic.split('.')[2]
+            dir_parquet = 'data/images/parquet/' + topic.split('.')[2]
             df_op_create \
                 .write \
                 .mode('append') \
                 .format("parquet") \
-                .save('/Users/emidiant/PycharmProjects/vk-parser/data/images/parquet/' + topic.split('.')[2])
+                .save(dir_parquet)
+
+            # .save('data/images/parquet/' + topic.split('.')[2])
             # self.__log.debug(f"First row: {df_op_create.first()}")
 
     def stop_spark(self):
