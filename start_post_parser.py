@@ -15,7 +15,15 @@ from post_parser.db_handler import DataBaseHandler
 from vk_common.common_python import get_logger
 
 
-def vk_post_parse(single_mode: bool = False, post_batch: int = 5):
+def vk_post_parse(single_mode: bool = False):
+    __log = get_logger("VkPostParse")
+    post_batch = os.getenv("POST_BATCH", 5)
+    if isinstance(post_batch, str):
+        try:
+            post_batch = int(post_batch)
+        except Exception as e:
+            __log.error(e)
+            post_batch = 5
     db_handler = DataBaseHandler(
         host=os.getenv("POSTGRES_HOST", credential.host),
         port=os.getenv("POSTGRES_PORT", credential.port)
@@ -24,7 +32,7 @@ def vk_post_parse(single_mode: bool = False, post_batch: int = 5):
     vk_groups_parser = VkPostParser(hdfs_dir)
     total_loop = 100
     i = total_loop
-    __log = get_logger("VkPostParse")
+
     try:
         while i > 0:
             __log.info(f"Iteration {total_loop - i + 1}/{total_loop}")
@@ -65,4 +73,4 @@ def vk_post_parse(single_mode: bool = False, post_batch: int = 5):
     return 0
 
 if __name__ == "__main__":
-    vk_post_parse(single_mode=False, post_batch=int(os.getenv("POST_BATCH", 5)))
+    vk_post_parse(single_mode=False)

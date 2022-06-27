@@ -4,7 +4,11 @@ ARG POSTGRES_HOST
 ARG POSTGRES_PORT
 ARG HDFS_DIR
 ARG POST_BATCH
+ARG API_VK_CODE
+ARG POST_BATCH
 
+ENV POST_BATCH $POST_BATCH
+ENV API_VK_CODE $API_VK_CODE
 ENV POST_BATCH $POST_BATCH
 ENV HDFS_DIR $HDFS_DIR
 ENV POSTGRES_HOST $POSTGRES_HOST
@@ -12,9 +16,10 @@ ENV POSTGRES_PORT $POSTGRES_PORT
 
 ENV POST_PARSER_HOME=/vk_parser
 
-RUN mkdir -p $POST_PARSER_HOME/post_parser & mkdir -p $POST_PARSER_HOME/vk_common & mkdir -p $POST_PARSER_HOME/data/images
+RUN mkdir -p $POST_PARSER_HOME/post_parser & mkdir -p $POST_PARSER_HOME/vk_common & mkdir -p $POST_PARSER_HOME/data/images & mkdir -p $POST_PARSER_HOME/sql
 
 COPY post_parser/* "$POST_PARSER_HOME"/post_parser/
+COPY sql/* "$POST_PARSER_HOME"/sql/
 COPY vk_common/common_python.py "$POST_PARSER_HOME"/vk_common/common_python.py
 COPY start_post_parser.py "$POST_PARSER_HOME"/start_post_parser.py
 COPY requirements/requirements_post_parsing.txt "$POST_PARSER_HOME"/

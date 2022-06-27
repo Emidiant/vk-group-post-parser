@@ -121,7 +121,7 @@ def define_structure(field_name: str, format_type: str) -> StructField:
 
     :param field_name:      field name
     :param format_type:     debezium data type
-    :return:
+    :return:                spark struct field
     """
     try:
         if format_type == 'datetime64[ns]':
@@ -145,3 +145,4 @@ def define_structure(field_name: str, format_type: str) -> StructField:
     except:
         typo = StringType()
     return StructField(field_name, typo)
+

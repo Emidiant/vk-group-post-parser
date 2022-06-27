@@ -5,7 +5,7 @@ db_handler.py
 
 Operation processing to database
 """
-from sqlalchemy import inspect, engine, MetaData
+from sqlalchemy import inspect, engine, MetaData, text
 
 from vk_common.common_python import get_logger
 import credential
@@ -27,7 +27,18 @@ class DataBaseHandler:
         inspector = inspect(self.engine)
         self.meta_data = MetaData(bind=self.engine.connect())
         MetaData.reflect(self.meta_data)
-        self.__log.debug(f"Tables: {inspector.get_table_names(schema='public')}")
+        tables = inspector.get_table_names(schema='public')
+        self.__log.debug(f"Tables: {tables}")
+        if "groups" not in tables:
+            self.__log.info("Create table groups")
+            with open("sql/group_table_create.sql") as file:
+                escaped_sql = text(file.read())
+                self.engine.execute(escaped_sql)
+        if "posts" not in tables:
+            self.__log.info("Create table posts")
+            with open("sql/posts_table_create.sql") as file:
+                escaped_sql = text(file.read())
+                self.engine.execute(escaped_sql)
 
     def get_groups_domains(self) -> list:
         """

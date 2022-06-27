@@ -80,6 +80,7 @@ class VkUrlHandler(FileSystemEventHandler):
         self.write_mode = write_mode
         hdfs_host = os.getenv("HDFS_HOST", "10.32.7.103")
         hdfs_port = os.getenv("HDFS_PORT", "31179")
+        # need to upload active node
         self.hdfs_client = InsecureClient(f'http://{hdfs_host}:{hdfs_port}', user='jusergeeva-242388')
         self.hdfs_dir = os.getenv("HDFS_DIR", "/tmp/jusergeeva-242388/project")
 
@@ -144,13 +145,9 @@ class VkUrlHandler(FileSystemEventHandler):
             image_path = os.path.join(self.hdfs_dir, f"{target}_2", f"img_{id}.jpg")
             try:
                 img_data = requests.get(url).content
-                # buf = io.BytesIO()
-                # buf.write(img_data)
-                # buf.seek(0)
+                # save image to hdfs
                 with self.hdfs_client.write(image_path, overwrite=True) as img_handler:
-                    # img_handler.write(buf.getvalue())
                     img_handler.write(img_data)
-                # buf.close()
             except requests.exceptions.ConnectionError as e:
                 self.__log.error(e)
                 return None

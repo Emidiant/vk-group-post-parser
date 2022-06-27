@@ -3,11 +3,12 @@ version: '3'
 services:
   vk_post_parser:
     image: vk-post-parsing:latest
-    links:
-      - postgres
     environment:
+      - POST_BATCH=${POST_BATCH}
       - POSTGRES_HOST=${POSTGRES_HOST}
       - POSTGRES_PORT=${POSTGRES_PORT}
+      - API_VK_CODE=${API_VK_CODE}
+      # insert code from url https://oauth.vk.com/authorize?client_id=8166774&display=page&redirect_uri=https://oauth.vk.com/blank.html&scope=groups&response_type=code&v=5.131
     networks:
       - debezium_default
 
@@ -24,10 +25,11 @@ services:
   vk_url_image_parser:
     image: vk-url-image-parsing:latest
     deploy:
-      replicas: 2
+      replicas: 4
     environment:
       - HDFS_HOST=${HDFS_HOST}
       - HDFS_PORT=${HDFS_PORT}
+      - HDFS_DIR=${HDFS_DIR}
       - MODE_FS=${MODE_FS}
     volumes:
       - /Users/emidiant/PycharmProjects/vk-parser/data/images:/vk_parser/data/images
