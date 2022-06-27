@@ -5,6 +5,7 @@
     "id":1466075,
     "from_id":-42370492,
     "domain": "kartiny_history",
+    "target": "painting",
     "owner_id":-42370492,
     "date":1651211820,
     "marked_as_ads":"0",
@@ -33,3 +34,4 @@
     "xmin":null
   }
 }
+
