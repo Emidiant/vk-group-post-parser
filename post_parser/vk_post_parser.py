@@ -140,7 +140,8 @@ class VkPostParser:
             start_offset = 0
             actual_timestamp = resp_two_first_posts[0]["date"]
         if last_datetime < actual_post_dt:
-            self.__log.info(f"Start parsing new posts in group: {domain}. Saved timestamp: {last_datetime}, New timestamp: {actual_post_dt}")
+            self.__log.info(f"Start parsing new posts in group: {domain}. "
+                            f"Saved timestamp: {last_datetime}, New timestamp: {actual_post_dt}")
             # need to parse new data
             return start_offset, actual_timestamp
         return -1, -1

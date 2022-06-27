@@ -28,6 +28,7 @@ services:
     environment:
       - HDFS_HOST=${HDFS_HOST}
       - HDFS_PORT=${HDFS_PORT}
+      - MODE_FS=${MODE_FS}
     volumes:
       - /Users/emidiant/PycharmProjects/vk-parser/data/images:/vk_parser/data/images
 

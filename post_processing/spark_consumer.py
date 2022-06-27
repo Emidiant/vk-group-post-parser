@@ -49,7 +49,6 @@ class SparkConsumer:
         kafka = kafka.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)", "CAST(topic AS STRING)")
 
         checkpoint_location = "checkpoints/spark_1"
-        # checkpoint_location = "/Users/emidiant/PycharmProjects/vk-parser/checkpoints/spark_2"
         query = kafka \
             .writeStream \
             .trigger(processingTime='30 seconds') \
